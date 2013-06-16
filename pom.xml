@@ -13,4 +13,12 @@
     <name>${project.artifactId}</name>
     <description>mt genome primer hunter</description>
     <inceptionYear>${project.parent.inceptionYear}</inceptionYear>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+        </dependency>
+
+    </dependencies>
 </project>

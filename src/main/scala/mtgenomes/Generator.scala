@@ -1,5 +1,7 @@
 package mtgenomes
 
+import java.util.Random
+import Utils._
 
 /**
  * A monadic abstraction for something which encapsulates the generation of instances of some type.
