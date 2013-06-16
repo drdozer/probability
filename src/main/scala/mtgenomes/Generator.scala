@@ -1,6 +1,6 @@
 package mtgenomes
 
-import java.util.Random
+import scala.util.Random
 import Utils._
 
 /**
@@ -67,6 +67,11 @@ object Generator {
       println(m(t))
       t
     })
+
+    def <> [S](companion: {def apply(t: T): S; def unapply(s: S): Option[T]}) = g <>
+      (companion apply _, ((s: S) => companion unapply s get))
+
+    def <> [S](wrap: T => S, unwrap: S => T) = g map wrap
 
     def | (p: T => Boolean) = Generator { rand =>
       def rec: T = {
