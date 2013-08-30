@@ -9,10 +9,8 @@
     </parent>
 
     <artifactId>probability</artifactId>
-    <version>${project.parent.version}</version>
     <name>${project.artifactId}</name>
     <description>mt genome primer hunter</description>
-    <inceptionYear>${project.parent.inceptionYear}</inceptionYear>
 
     <dependencies>
         <dependency>
@@ -21,4 +19,17 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.scala-tools</groupId>
+                <artifactId>maven-scala-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>
