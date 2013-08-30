@@ -16,6 +16,11 @@ trait Generator[T] {
   def flatMap[U](f: T => Generator[U]): Generator[U] = Generator { rand => f(gen generateFrom rand) generateFrom rand }
 }
 
+trait ConstructorCompanion[X, C] {
+  def apply(c: C): X
+  def unapply(x: X): Option[C]
+}
+
 object Generator {
 
   def apply[T](g: Random => T): Generator[T] = new Generator[T] {
@@ -68,10 +73,9 @@ object Generator {
       t
     })
 
-    def <> [S](companion: {def apply(t: T): S; def unapply(s: S): Option[T]}) = g <>
-      (companion apply _, ((s: S) => companion unapply s get))
+    def <> [S](cc: ConstructorCompanion[S, T]): Generator[S] = g <> (cc apply _, ((s: S) => cc unapply s get))
 
-    def <> [S](wrap: T => S, unwrap: S => T) = g map wrap
+    def <> [S](wrap: T => S, unwrap: S => T): Generator[S] = g map wrap
 
     def | (p: T => Boolean) = Generator { rand =>
       def rec: T = {
