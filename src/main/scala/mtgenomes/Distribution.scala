@@ -85,7 +85,7 @@ object CategoricalDistribution {
     def pmf(par: Array[Double], x: Int) = par(x)
   }
 
-  implicit class CD[Par, T](val par: Par)(implicit cd: CategoricalDistribution[Par, T]) extends AnyVal {
+  implicit class CD[Par, T](val par: Par)(implicit cd: CategoricalDistribution[Par, T]) /*extends AnyVal*/ {
     def generator: Generator[T] = Generator { rand => cd.percentile(par, rand.nextDouble()) }
   }
 }
