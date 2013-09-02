@@ -3,8 +3,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>mtgenomes</groupId>
-        <artifactId>mtgenomes</artifactId>
+        <groupId>uk.co.turingatemyhamster</groupId>
+        <artifactId>turingatemyhamster_parent</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
