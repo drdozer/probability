@@ -1,0 +1,4 @@
+probability
+===========
+
+Composable, probabilistic computations.
