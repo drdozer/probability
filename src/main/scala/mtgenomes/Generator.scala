@@ -66,6 +66,44 @@ object Generator {
     }
   }
 
+  object Random {
+    val nextBoolean = Generator[Boolean] { _.nextBoolean() }
+    val nextDouble = Generator[Double] { _.nextDouble() }
+    val nextFloat = Generator[Float] { _.nextFloat() }
+    val nextGausian = Generator[Double] { _.nextGaussian() }
+    val nextInt = Generator[Int] { _.nextInt() }
+    def nextInt(i: Int) = Generator[Int] { _.nextInt(i) }
+    val nextLong = Generator[Long] { _.nextLong() }
+    val nextPrintableChar = Generator[Char] { _.nextPrintableChar() }
+    def nextString(length: Int) = Generator[String] { _.nextString(length) }
+  }
+
+  implicit class NumericalGeneratorSyntax[T](val g: Generator[T])(implicit nn: Numeric[T]) {
+
+    // numeric ops
+    import nn.mkNumericOps
+    def + (rhs: T) = g map (_ + rhs)
+    def - (rhs: T) = g map (_ - rhs)
+    def * (rhs: T) = g map (_ * rhs)
+    def unary_-() = g map (_.unary_-())
+    val abs = g map (_.abs())
+    val signum = g map (_.signum())
+    val toInt = g map (_.toInt())
+    val toLong = g map (_.toLong())
+    val toFloat = g map (_.toFloat())
+    val toDouble = g map (_.toDouble())
+
+    // comparison ops
+    import nn.mkOrderingOps
+    def < (rhs: T) = g map (_ < rhs)
+    def <= (rhs: T) = g map (_ <= rhs)
+    def > (rhs: T) = g map (_ > rhs)
+    def >= (rhs: T) = g map (_ >= rhs)
+    def equiv (rhs: T) = g map (_ equiv rhs)
+    def max (rhs: T) = g map (_ max rhs)
+    def min (rhs: T) = g map (_ min rhs)
+  }
+
   implicit class GeneratorSyntax[T](val g: Generator[T]) extends AnyVal {
     def repeat(n: Int) = repeatN(n, g)
     def log(m: T => String) = g map (t => {
@@ -73,7 +111,7 @@ object Generator {
       t
     })
 
-    def <> [S](cc: ConstructorCompanion[S, T]): Generator[S] = g <> (cc apply _, ((s: S) => cc unapply s get))
+    def <> [S](cc: ConstructorCompanion[S, T]): Generator[S] = g <> (cc.apply, (s: S) => (cc unapply s).get)
 
     def <> [S](wrap: T => S, unwrap: S => T): Generator[S] = g map wrap
 
