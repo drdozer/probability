@@ -13,5 +13,4 @@ object Utils {
 
   }
 
-  def const[A, B](b: B): B = b
 }
