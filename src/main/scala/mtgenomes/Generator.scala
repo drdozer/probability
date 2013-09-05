@@ -124,6 +124,8 @@ object Generator {
 
       rec
     }
+
+    def const[S] = (s: S) => g
   }
 
   implicit class SeqGeneratorSyntax[T](val seq: Seq[T]) extends AnyVal {
