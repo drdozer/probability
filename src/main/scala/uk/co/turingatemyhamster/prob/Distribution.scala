@@ -1,4 +1,4 @@
-package mtgenomes
+package uk.co.turingatemyhamster.prob
 
 
 trait Distribution[Par, T] {

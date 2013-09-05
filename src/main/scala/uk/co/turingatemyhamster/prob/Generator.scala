@@ -1,4 +1,4 @@
-package mtgenomes
+package uk.co.turingatemyhamster.prob
 
 import scala.util.Random
 import Utils._
