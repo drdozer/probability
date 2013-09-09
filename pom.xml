@@ -10,6 +10,7 @@
 
     <artifactId>probability</artifactId>
     <name>${project.artifactId}</name>
+    <version>1.0.1-SNAPSHOT</version>
     <description>mt genome primer hunter</description>
 
     <dependencies>
