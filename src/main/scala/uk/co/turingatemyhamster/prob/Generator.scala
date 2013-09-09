@@ -29,8 +29,8 @@ object Generator {
 
   def identityG[T]: T => Generator[T] = (t: T) => Generator[T] { rand => t }
 
-  def if_[A](g: Generator[Boolean])(onTrue: => A) = new {
-    def else_(onFalse: => A) = g map (b => if(b) onTrue else onFalse)
+  def _if_[A](g: Generator[Boolean])(onTrue: => A) = new {
+    def _else_(onFalse: => A) = g map (b => if(b) onTrue else onFalse)
   }
 
   implicit class ValueSyntax[V](val v: V) extends AnyVal {
