@@ -132,6 +132,11 @@ object Generator {
     def const[S] = (s: S) => g
   }
 
+  implicit class BooleanGeneratorSyntax(val g: Generator[Boolean]) extends AnyVal {
+    def && (b: Boolean): Generator[Boolean] = g map (_ && b)
+    def || (b: Boolean): Generator[Boolean] = g map (_ || b)
+  }
+
   implicit class SeqGeneratorSyntax[T](val seq: Seq[T]) extends AnyVal {
     def oneOf = {
       Generator { rand => (rand nextInt seq.length) |> seq }
