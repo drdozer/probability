@@ -39,6 +39,9 @@ object Generator {
 
   implicit class PairValueSyntax[V, W](val vw: (V, W)) extends AnyVal {
     def map2[A, B](va: V => A, wb: W => B) = (va(vw._1), wb(vw._2))
+
+    def liftL[A](implicit ev: V <:< Generator[A]): Generator[(A, W)] = for(a <- vw._1) yield (a, vw._2)
+    def liftR[B](implicit ev: W <:< Generator[B]): Generator[(V, B)] = for(b <- vw._2) yield (vw._1, b)
   }
 
   implicit class PairValueSyntaxG[V, W](val vw: (Generator[V], Generator[W])) extends AnyVal {
