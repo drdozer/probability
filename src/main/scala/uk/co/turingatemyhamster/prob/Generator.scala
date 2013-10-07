@@ -27,8 +27,6 @@ object Generator {
     def generateFrom(rand: Random) = g(rand)
   }
 
-  def identityG[T]: T => Generator[T] = (t: T) => Generator[T] { rand => t }
-
   def _if_[A](g: Generator[Boolean])(onTrue: => A) = new {
     def _else_(onFalse: => A): Generator[A] = g map (b => if(b) onTrue else onFalse)
   }
@@ -36,6 +34,7 @@ object Generator {
   implicit class ValueSyntax[V](val v: V) extends AnyVal {
     def |> [VV, W](f: VV => W)(implicit vv: V => VV): W = f(v)
     def dup: (V, V) = (v, v)
+    def identityG[VV](implicit ev: V <:< VV): Generator[VV] = Generator[VV] { rand => v }
   }
 
   implicit class PairValueSyntax[V, W](val vw: (V, W)) extends AnyVal {
@@ -132,7 +131,12 @@ object Generator {
     def const[S] = (s: S) => g
   }
 
-  implicit class BooleanGeneratorSyntax(val g: Generator[Boolean]) extends AnyVal {
+  implicit class GeneratorOfSeqSyntax[T](val g: Generator[Seq[T]]) extends AnyVal {
+    def <*> [S](cc: ConstructorCompanion[S, T]): Generator[Seq[S]] = g map (_ map cc.apply)
+    def <*> [S](wrap: T => S): Generator[Seq[S]] = g map (_ map wrap)
+  }
+
+  implicit class GeneratorOfBooleanSyntax(val g: Generator[Boolean]) extends AnyVal {
     def && (b: Boolean): Generator[Boolean] = g map (_ && b)
     def || (b: Boolean): Generator[Boolean] = g map (_ || b)
   }
@@ -145,7 +149,7 @@ object Generator {
     def manyOf(n: Int): Generator[Seq[T]] = {
       if(n > seq.size) throw new IllegalArgumentException(f"Can't choose $n items from a seq with only ${seq.size} elements")
       else n match {
-        case 0 => identityG(Seq())
+        case 0 => Seq().identityG
         case _ => for(
           t <- seq.oneOf;
           seqNotT = seq removeFirst (_ == t);
@@ -178,7 +182,7 @@ object Generator {
       if(n > seq.size) throw new IllegalArgumentException(f"Can't choose $n items from a sequence with ${seq.size} items")
       else {
         n match {
-          case 0 => identityG(Seq())
+          case 0 => Seq().identityG
           case _ => for(
             t <- seq.oneWeighted;
             seqNotT = seq removeFirst {tw: (T, Double) => tw._1 == t};
