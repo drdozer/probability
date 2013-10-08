@@ -64,6 +64,10 @@ object Generator {
 
   }
 
+  implicit class DoubleSyntax(val d: Double) extends AnyVal {
+    def probability: Generator[Boolean] = Random.nextDouble <= d
+  }
+
   object String {
     // try to lift into a pure Generator[T]
     def subString(str: String, length: Int): Generator[String] = Generator { rand =>
