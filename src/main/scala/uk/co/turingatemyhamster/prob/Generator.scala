@@ -160,6 +160,15 @@ object Generator {
           chosen <- seqNotT manyOf (n-1)) yield chosen :+ t
       }
     }
+
+    def sequence[TT](implicit sg: T <:< Generator[TT]): Generator[Seq[TT]] = {
+      seq.headOption match {
+        case None => Nil.identityG
+        case Some(h) =>
+          for(hsg <- sg(h);
+              tsg <- seq.tail.sequence) yield hsg +: tsg
+      }
+    }
   }
 
   implicit class SeqWithWeightSyntax[T](val seq: Seq[(T, Double)]) {
