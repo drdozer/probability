@@ -78,7 +78,7 @@ object Generation {
 
     for(sf <- sfGen;
         chosen3 <- initialPopulation manyOf 3;
-        ranked <- rankParents(chosen3 map (i => i -> (sf score i)));
+        ranked <- rankParents((chosen3.par map (i => i -> (sf score i))).seq);
         Seq(luckyParent, secondParent, victim) = ranked;
         childGen <- Seq(mut(luckyParent) -> 0.8,
           xover(luckyParent, secondParent) -> 0.2).oneWeighted;

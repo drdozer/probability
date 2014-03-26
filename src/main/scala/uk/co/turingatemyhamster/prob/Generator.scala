@@ -31,6 +31,8 @@ object Generator {
     def _else_(onFalse: => A): Generator[A] = g map (b => if(b) onTrue else onFalse)
   }
 
+  def identityG[T](t: T) = Generator { rand => t }
+
   implicit class ValueSyntax[V](val v: V) extends AnyVal {
     def |> [VV, W](f: VV => W)(implicit vv: V => VV): W = f(v)
     def dup: (V, V) = (v, v)
@@ -45,7 +47,7 @@ object Generator {
   }
 
   implicit class PairValueSyntaxG[V, W](val vw: (Generator[V], Generator[W])) extends AnyVal {
-    def |@| : Generator[(V, W)] = Generator { rand => (vw._1 generateFrom rand, vw._2 generateFrom rand) }
+    def |@| : Generator[(V, W)] = for(vw1 <- vw._1; vw2 <- vw._2) yield (vw1, vw2)
   }
 
   def choose[T](gs: Seq[(Generator[T], Double)]): Generator[T] = Generator { rand =>
@@ -80,12 +82,13 @@ object Generator {
     val nextBoolean = Generator[Boolean] { _.nextBoolean() }
     val nextDouble = Generator[Double] { _.nextDouble() }
     val nextFloat = Generator[Float] { _.nextFloat() }
-    val nextGausian = Generator[Double] { _.nextGaussian() }
+    val nextGausian: Generator[Double] = Generator[Double] { _.nextGaussian() }
     val nextInt = Generator[Int] { _.nextInt() }
     def nextInt(i: Int) = Generator[Int] { _.nextInt(i) }
     val nextLong = Generator[Long] { _.nextLong() }
     val nextPrintableChar = Generator[Char] { _.nextPrintableChar() }
     def nextString(length: Int) = Generator[String] { _.nextString(length) }
+    def nextGausian(mean: Double, width: Double): Generator[Double] = (nextGausian * width + 1) * mean
   }
 
   implicit class NumericalGeneratorSyntax[T](val g: Generator[T])(implicit nn: Numeric[T]) {
