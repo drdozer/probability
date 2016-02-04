@@ -1,4 +1,4 @@
-package mtgenomes
+package uk.co.turingatemyhamster.prob
 
 /**
  * Created by nmrp3 on 03/06/13.
@@ -13,5 +13,4 @@ object Utils {
 
   }
 
-  def const[A, B](b: B): B = b
 }

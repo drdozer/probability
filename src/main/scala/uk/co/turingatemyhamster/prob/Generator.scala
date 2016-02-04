@@ -1,4 +1,4 @@
-package mtgenomes
+package uk.co.turingatemyhamster.prob
 
 import scala.util.Random
 import Utils._
@@ -27,19 +27,27 @@ object Generator {
     def generateFrom(rand: Random) = g(rand)
   }
 
-  def identityG[T]: T => Generator[T] = (t: T) => Generator[T] { rand => t }
+  def _if_[A](g: Generator[Boolean])(onTrue: => A) = new {
+    def _else_(onFalse: => A): Generator[A] = g map (b => if(b) onTrue else onFalse)
+  }
+
+  def identityG[T](t: T) = Generator { rand => t }
 
   implicit class ValueSyntax[V](val v: V) extends AnyVal {
     def |> [VV, W](f: VV => W)(implicit vv: V => VV): W = f(v)
     def dup: (V, V) = (v, v)
+    def identityG[VV](implicit ev: V <:< VV): Generator[VV] = Generator[VV] { rand => v }
   }
 
   implicit class PairValueSyntax[V, W](val vw: (V, W)) extends AnyVal {
     def map2[A, B](va: V => A, wb: W => B) = (va(vw._1), wb(vw._2))
+
+    def liftL[A](implicit ev: V <:< Generator[A]): Generator[(A, W)] = for(a <- vw._1) yield (a, vw._2)
+    def liftR[B](implicit ev: W <:< Generator[B]): Generator[(V, B)] = for(b <- vw._2) yield (vw._1, b)
   }
 
   implicit class PairValueSyntaxG[V, W](val vw: (Generator[V], Generator[W])) extends AnyVal {
-    def |@| : Generator[(V, W)] = Generator { rand => (vw._1 generateFrom rand, vw._2 generateFrom rand) }
+    def |@| : Generator[(V, W)] = for(vw1 <- vw._1; vw2 <- vw._2) yield (vw1, vw2)
   }
 
   def choose[T](gs: Seq[(Generator[T], Double)]): Generator[T] = Generator { rand =>
@@ -58,12 +66,55 @@ object Generator {
 
   }
 
+  implicit class DoubleSyntax(val d: Double) extends AnyVal {
+    def probability: Generator[Boolean] = Random.nextDouble <= d
+  }
+
   object String {
     // try to lift into a pure Generator[T]
     def subString(str: String, length: Int): Generator[String] = Generator { rand =>
       val i = rand.nextInt(str.length - length)
       str.substring(i, i + length)
     }
+  }
+
+  object Random {
+    val nextBoolean = Generator[Boolean] { _.nextBoolean() }
+    val nextDouble = Generator[Double] { _.nextDouble() }
+    val nextFloat = Generator[Float] { _.nextFloat() }
+    val nextGausian: Generator[Double] = Generator[Double] { _.nextGaussian() }
+    val nextInt = Generator[Int] { _.nextInt() }
+    def nextInt(i: Int) = Generator[Int] { _.nextInt(i) }
+    val nextLong = Generator[Long] { _.nextLong() }
+    val nextPrintableChar = Generator[Char] { _.nextPrintableChar() }
+    def nextString(length: Int) = Generator[String] { _.nextString(length) }
+    def nextGausian(mean: Double, width: Double): Generator[Double] = (nextGausian * width + 1) * mean
+  }
+
+  implicit class NumericalGeneratorSyntax[T](val g: Generator[T])(implicit nn: Numeric[T]) {
+
+    // numeric ops
+    import nn.mkNumericOps
+    def + (rhs: T) = g map (_ + rhs)
+    def - (rhs: T) = g map (_ - rhs)
+    def * (rhs: T) = g map (_ * rhs)
+    def unary_-() = g map (_.unary_-())
+    val abs = g map (_.abs())
+    val signum = g map (_.signum())
+    val toInt = g map (_.toInt())
+    val toLong = g map (_.toLong())
+    val toFloat = g map (_.toFloat())
+    val toDouble = g map (_.toDouble())
+
+    // comparison ops
+    import nn.mkOrderingOps
+    def < (rhs: T) = g map (_ < rhs)
+    def <= (rhs: T) = g map (_ <= rhs)
+    def > (rhs: T) = g map (_ > rhs)
+    def >= (rhs: T) = g map (_ >= rhs)
+    def equiv (rhs: T) = g map (_ equiv rhs)
+    def max (rhs: T) = g map (_ max rhs)
+    def min (rhs: T) = g map (_ min rhs)
   }
 
   implicit class GeneratorSyntax[T](val g: Generator[T]) extends AnyVal {
@@ -73,7 +124,7 @@ object Generator {
       t
     })
 
-    def <> [S](cc: ConstructorCompanion[S, T]): Generator[S] = g <> (cc apply _, ((s: S) => cc unapply s get))
+    def <> [S](cc: ConstructorCompanion[S, T]): Generator[S] = g <> (cc.apply, (s: S) => (cc unapply s).get)
 
     def <> [S](wrap: T => S, unwrap: S => T): Generator[S] = g map wrap
 
@@ -86,6 +137,18 @@ object Generator {
 
       rec
     }
+
+    def const[S] = (s: S) => g
+  }
+
+  implicit class GeneratorOfSeqSyntax[T](val g: Generator[Seq[T]]) extends AnyVal {
+    def <*> [S](cc: ConstructorCompanion[S, T]): Generator[Seq[S]] = g map (_ map cc.apply)
+    def <*> [S](wrap: T => S): Generator[Seq[S]] = g map (_ map wrap)
+  }
+
+  implicit class GeneratorOfBooleanSyntax(val g: Generator[Boolean]) extends AnyVal {
+    def && (b: Boolean): Generator[Boolean] = g map (_ && b)
+    def || (b: Boolean): Generator[Boolean] = g map (_ || b)
   }
 
   implicit class SeqGeneratorSyntax[T](val seq: Seq[T]) extends AnyVal {
@@ -96,12 +159,21 @@ object Generator {
     def manyOf(n: Int): Generator[Seq[T]] = {
       if(n > seq.size) throw new IllegalArgumentException(f"Can't choose $n items from a seq with only ${seq.size} elements")
       else n match {
-        case 0 => identityG(Seq())
+        case 0 => Seq().identityG
         case _ => for(
           t <- seq.oneOf;
           seqNotT = seq removeFirst (_ == t);
           _ = if(seqNotT.size != seq.size - 1) throw new IllegalStateException(f"Supposed to remove one element from ${seq.size} items but got down to ${seqNotT.size} elements");
           chosen <- seqNotT manyOf (n-1)) yield chosen :+ t
+      }
+    }
+
+    def sequence[TT](implicit sg: T <:< Generator[TT]): Generator[Seq[TT]] = {
+      seq.headOption match {
+        case None => Nil.identityG
+        case Some(h) =>
+          for(hsg <- sg(h);
+              tsg <- seq.tail.sequence) yield hsg +: tsg
       }
     }
   }
@@ -129,7 +201,7 @@ object Generator {
       if(n > seq.size) throw new IllegalArgumentException(f"Can't choose $n items from a sequence with ${seq.size} items")
       else {
         n match {
-          case 0 => identityG(Seq())
+          case 0 => Seq().identityG
           case _ => for(
             t <- seq.oneWeighted;
             seqNotT = seq removeFirst {tw: (T, Double) => tw._1 == t};
